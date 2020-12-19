@@ -30,7 +30,7 @@
                     "-p","3333:3333",
                     "--cap-add=SYS_PTRACE",
                     "--security-opt","seccomp=unconfined",
-                    "chp9/stm32cubef3:latest",
+                    "chapter9/arm-none-eabi-gcc:latest",
                     "sh","-c"
                 ],
                 "debuggerPath": "arm-none-eabi-gdb"
