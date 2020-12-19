@@ -1,0 +1,1 @@
+docker run --rm -v $PWD:/usr/src/myapp -w /usr/src/myapp chp9/stm32cubef3:latest make -j 12
