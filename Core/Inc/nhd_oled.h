@@ -88,6 +88,26 @@ typedef struct __NHD_OLED_HandleTypeDef {
 #define NHD_OLED_DC_HIGH() HAL_GPIO_WritePin(holed->DC_GPIO_Port, holed->DC_Pin, GPIO_PIN_SET)
 #define NHD_OLED_LED_BLINK() HAL_GPIO_TogglePin(holed->LED_GPIO_Port, holed->LED_Pin)
 
+#define NHD_OLED_RGB565(R,G,B) ((R&0x1F)<<11)|(B&0x1F)<<3|(G&0x7)|((G&0x38)<<5)
+static const uint16_t RGB565[16] = {
+  NHD_OLED_RGB565(0x00, 0x00, 0x00), // Black  
+  NHD_OLED_RGB565(0x00, 0x00, 0x0F), // Blue
+  NHD_OLED_RGB565(0x00, 0x1F, 0x00), // Green
+  NHD_OLED_RGB565(0x00, 0x1F, 0x0F), // Aqua
+  NHD_OLED_RGB565(0x0F, 0x00, 0x00), // Red
+  NHD_OLED_RGB565(0x0F, 0x00, 0x0F), // Purple Y
+  NHD_OLED_RGB565(0x0F, 0x1F, 0x00), // Yellow
+  NHD_OLED_RGB565(0x0F, 0x1F, 0x0F), // White B
+  NHD_OLED_RGB565(0x07, 0x0F, 0x07), // Gray  1
+  NHD_OLED_RGB565(0x00, 0x00, 0x1F), // Blue  G
+  NHD_OLED_RGB565(0x00, 0x3F, 0x00), // Green B
+  NHD_OLED_RGB565(0x00, 0x3F, 0x1F), // Aqua  1
+  NHD_OLED_RGB565(0x1F, 0x00, 0x00), // Red   1
+  NHD_OLED_RGB565(0x1F, 0x00, 0x1F), // Purple
+  NHD_OLED_RGB565(0x1F, 0x3F, 0x00), // Yellow
+  NHD_OLED_RGB565(0x1F, 0x3F, 0x1F), // Bright White
+};
+
 static const uint32_t RGB888[16] = {
   0x000000, // Black
   0x000080, // Blue
@@ -107,24 +127,24 @@ static const uint32_t RGB888[16] = {
   0xFFFFFF, // Bright White
 }; 
 
-extern void NHD_OLED_Error(NHD_OLED_HandleTypeDef* holed);
-extern void NHD_OLED_DataWrite(NHD_OLED_HandleTypeDef* holed, uint8_t Value);
+extern void NHD_OLED_DataWrite(NHD_OLED_HandleTypeDef* holed, uint8_t* pData, size_t size);
 
 void NHD_OLED_Command(NHD_OLED_HandleTypeDef* holed, uint8_t Value);
 void NHD_OLED_Data(NHD_OLED_HandleTypeDef* holed, uint8_t Value);
-void NHD_OLED_SerialPixelData(NHD_OLED_HandleTypeDef* holed, uint8_t Value);
+void NHD_OLED_SerialPixelData8(NHD_OLED_HandleTypeDef* holed, uint8_t Value);
+void NHD_OLED_SerialPixelData16(NHD_OLED_HandleTypeDef* holed, uint16_t Value);
 void NHD_OLED_SetColumnAddress(NHD_OLED_HandleTypeDef* holed, uint8_t x_start, uint8_t x_end);
 void NHD_OLED_SetRowAddress(NHD_OLED_HandleTypeDef* holed, uint8_t y_start, uint8_t y_end);
 void NHD_OLED_WriteMemoryStart(NHD_OLED_HandleTypeDef* holed);
-void NHD_OLED_Pixel(NHD_OLED_HandleTypeDef* holed, unsigned long color);
+void NHD_OLED_Pixel_RGB888(NHD_OLED_HandleTypeDef* holed, uint16_t color);
 void NHD_OLED_SetPosition(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos);
-void NHD_OLED_FillScreen(NHD_OLED_HandleTypeDef* holed, unsigned long color);
+void NHD_OLED_FillScreen(NHD_OLED_HandleTypeDef* holed, uint16_t color);
 void NHD_OLED_Init(NHD_OLED_HandleTypeDef* holed);
 
-void NHD_OLED_Text(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, unsigned char letter, unsigned long textColor, unsigned long backgroundColor);
-void NHD_OLED_Text2x(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, unsigned char letter, unsigned long textColor, unsigned long backgroundColor);
-void NHD_OLED_Icon(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos);
-void NHD_OLED_Spectrum(NHD_OLED_HandleTypeDef* holed);
+void NHD_OLED_Text(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, char* message, uint16_t textColor, uint16_t backgroundColor);
+void NHD_OLED_Text2x(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, char* message, uint16_t textColor, uint16_t backgroundColor);
+void NHD_OLED_Char(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, unsigned char letter, uint16_t textColor, uint16_t backgroundColor);
+void NHD_OLED_Char2x(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, unsigned char letter, uint16_t textColor, uint16_t backgroundColor);
 
 #ifdef __cplusplus
 }

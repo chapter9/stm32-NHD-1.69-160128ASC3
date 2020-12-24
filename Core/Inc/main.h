@@ -33,6 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "nhd_oled.h"
+#include "stm32f3xx_hal_spi.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -54,8 +55,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void NHD_OLED_Error(NHD_OLED_HandleTypeDef* holed);
-void NHD_OLED_DataWrite(NHD_OLED_HandleTypeDef* holed, uint8_t value);
+void NHD_OLED_DataWrite(NHD_OLED_HandleTypeDef* holed, uint8_t* pData, size_t size);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

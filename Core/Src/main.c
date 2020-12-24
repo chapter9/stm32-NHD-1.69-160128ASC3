@@ -22,6 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,6 +41,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
+DMA_HandleTypeDef hdma_spi1_tx;
 
 /* USER CODE BEGIN PV */
 NHD_OLED_HandleTypeDef holed1;
@@ -48,9 +50,13 @@ NHD_OLED_HandleTypeDef holed1;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 static void MX_OLED1_Init(void);
+void MY_HAL_SPI_TX_COMPLETE(SPI_HandleTypeDef *hspi);
+void MY_HAL_SPI_HTX_COMPLETE(SPI_HandleTypeDef *hspi);
+HAL_StatusTypeDef HAL_SPI_Transmit_UltraFast(uint8_t *outp, uint8_t *inp, int count);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -86,20 +92,61 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   MX_OLED1_Init();
-  uint8_t count = 0;
+  uint32_t now, last = 0;
+  char message[20];
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+    last = HAL_GetTick();
+    for (size_t i = 0; i < 16; i++)
+    {
+      NHD_OLED_FillScreen(&holed1, RGB565[i]);
+    }
+    now = HAL_GetTick();
+    NHD_OLED_FillScreen(&holed1, RGB565[1]);
+    sprintf(message, "Result: %lums", now - last);
+    NHD_OLED_Text(&holed1, 2, 128 - 10, "Fill Test:", RGB565[15], RGB565[1]);
+    NHD_OLED_Text(&holed1, 2, 128 - 20, "16 fills, 16 colors", RGB565[15], RGB565[1]);
+    NHD_OLED_Text(&holed1, 2, 128 - 30, message, RGB565[15], RGB565[1]);
+    HAL_Delay(2000);
+
+    NHD_OLED_FillScreen(&holed1, RGB565[0]);
+    last = HAL_GetTick();
+    for (size_t i = 1; i < 100; i++)
+    {
+      NHD_OLED_Text(&holed1, 0, (i*8) % 128, "0123456789", RGB565[i % 16], RGB565[0]);
+    }
+    now = HAL_GetTick();
+    NHD_OLED_FillScreen(&holed1, RGB565[1]);
+    sprintf(message, "Result: %lums", now - last);
+    NHD_OLED_Text(&holed1, 2, 128 - 10, "Text Test:", RGB565[15], RGB565[1]);
+    NHD_OLED_Text(&holed1, 2, 128 - 20, "1000 char, 16 colors", RGB565[15], RGB565[1]);
+    NHD_OLED_Text(&holed1, 2, 128 - 30, message, RGB565[15], RGB565[1]);
+    HAL_Delay(2000);
+
+    NHD_OLED_FillScreen(&holed1, RGB565[0]);
+    last = HAL_GetTick();
+    for (size_t i = 1; i < 100; i++)
+    {
+      NHD_OLED_Text2x(&holed1, 0, (i*16) % 128, "0123456789", RGB565[i % 16], RGB565[0]);
+    }
+    now = HAL_GetTick();
+    NHD_OLED_FillScreen(&holed1, RGB565[1]);
+    sprintf(message, "Result: %lums", now - last);
+    NHD_OLED_Text(&holed1, 2, 128 - 10, "Text2x Test:", RGB565[15], RGB565[1]);
+    NHD_OLED_Text(&holed1, 2, 128 - 20, "1000 char, 16 colors", RGB565[15], RGB565[1]);
+    NHD_OLED_Text(&holed1, 2, 128 - 30, message, RGB565[15], RGB565[1]);
+    HAL_Delay(2000);
+
     /* USER CODE END WHILE */
-    NHD_OLED_FillScreen(&holed1, RGB888[count]);
-    count = (count + 1) % 16;
-    HAL_Delay(500);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -175,8 +222,33 @@ static void MX_SPI1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN SPI1_Init 2 */
-
+  
+  SET_BIT(SPI1->CR1, SPI_CR1_SPE); // Enable SPI
+  if (HAL_SPI_RegisterCallback(&hspi1, HAL_SPI_TX_COMPLETE_CB_ID, MY_HAL_SPI_TX_COMPLETE) !=HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_SPI_RegisterCallback(&hspi1, HAL_SPI_TX_HALF_COMPLETE_CB_ID, MY_HAL_SPI_HTX_COMPLETE) !=HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
 
 }
 
@@ -229,21 +301,47 @@ static void MX_OLED1_Init(void)
     holed1.hspi = &hspi1;
 
     NHD_OLED_Init(&holed1);
-    NHD_OLED_Spectrum(&holed1);
-    HAL_Delay(3000);
 }
 
-void NHD_OLED_Error(NHD_OLED_HandleTypeDef* holed)
+void NHD_OLED_DataWrite(NHD_OLED_HandleTypeDef* holed, uint8_t* pData, size_t size)
 {
-  Error_Handler();
-}
-
-void NHD_OLED_DataWrite(NHD_OLED_HandleTypeDef* holed, uint8_t Value)
-{
-  if(HAL_SPI_Transmit(holed->hspi, (uint8_t*) &Value, 1, 5000) != HAL_OK)
+  uint8_t dummy = 0x00;
+  if (HAL_SPI_Transmit_UltraFast(pData, &dummy, size) != HAL_OK)
   {
-      NHD_OLED_Error(holed);
+    Error_Handler();
   }
+  /*
+  if (HAL_SPI_Transmit(&hspi1, pData, size, 5000) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  */
+}
+
+
+void MY_HAL_SPI_TX_COMPLETE(SPI_HandleTypeDef *hspi)
+{
+}
+
+void MY_HAL_SPI_HTX_COMPLETE(SPI_HandleTypeDef *hspi)
+{
+}
+
+HAL_StatusTypeDef HAL_SPI_Transmit_UltraFast(uint8_t *outp, uint8_t *inp, int count)
+{
+  while(count--) {
+      //while(!(SPI1->SR & SPI_SR_TXE));
+      *(volatile uint8_t *)&SPI1->DR = *outp++;
+      //while(!(SPI1->SR & SPI_SR_RXNE));
+      //*inp++ = *(volatile uint8_t *)&SPI1->DR;
+      //while(!(SPI1->SR & SPI_FLAG_FTLVL) != SPI_FTLVL_EMPTY);
+      //while(!(SPI1->SR & SPI_FLAG_BSY) != RESET);
+      //while(!(SPI1->SR & SPI_FLAG_FRLVL) != SPI_FRLVL_EMPTY);
+  }
+  asm volatile("nop");
+  asm volatile("nop");
+  asm volatile("nop");
+  return HAL_OK;
 }
 
 /* USER CODE END 4 */
