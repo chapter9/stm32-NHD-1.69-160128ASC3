@@ -1,48 +1,35 @@
 {
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // For more information, visit: https://go.microsoft.com/fwlink/linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Docker - OpenOCD Debug",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "build/F303K8Tx_SPI.elf",
-            "args": [],
-            "stopAtEntry": true,
-            "cwd": "/usr/src/myapp",
-            "environment": [],
-            "externalConsole": true,
-            "sourceFileMap": { 
-                "/usr/src/myapp": "${workspaceFolder}" 
-            },
-            "pipeTransport": {
-                "pipeCwd": "${workspaceFolder}",
-                "pipeProgram": "docker",
-                //"pipeArgs": ["exec","-i","angry_vaughan","sh","-c"],
-                "pipeArgs": [
-                    "run",
-                    "-i",
-                    "--rm",
-                    "-v","${workspaceFolder}:/usr/src/myapp",
-                    "-w","/usr/src/myapp",
-                    "-p","3333:3333",
-                    "--cap-add=SYS_PTRACE",
-                    "--security-opt","seccomp=unconfined",
-                    "chapter9/arm-none-eabi-gcc:latest",
-                    "sh","-c"
-                ],
-                "debuggerPath": "arm-none-eabi-gdb"
-            },
-            "MIMode": "gdb",
-            "setupCommands": [
-                { "text": "target extended-remote host.docker.internal:3333" },
+			"name": "GDB (REMOTE)",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/build/F303K8Tx_SPI.elf",
+            "miDebuggerPath": "/usr/bin/gdb-multiarch",
+			"targetArchitecture": "arm",
+			"preLaunchTask": "prepdebug",
+			"args": [],
+			"stopAtEntry": true,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				},
+				{ "text": "target extended-remote host.docker.internal:3333" },
                 { "text": "monitor reset halt" },
-                { "text": "monitor adapter speed 4000" },
-                { "text": "load build/F303K8Tx_SPI.elf" },
-                { "text": "monitor adapter speed 4000" },
-            ],
-        },
-   ]
+                //{ "text": "monitor adapter speed 4000" },
+                //{ "text": "load ${workspaceFolder}/build/F303K8Tx_SPI.elf" },
+                //{ "text": "monitor adapter speed 4000" },
+			]
+		}
+    ]
 }

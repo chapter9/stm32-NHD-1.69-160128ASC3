@@ -30,7 +30,7 @@ CMD [ "sleep", "infinity" ]
 
 # [Optional] Uncomment this section to install additional OS packages.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends gcc-arm-none-eabi make
+    && apt-get -y install --no-install-recommends gcc-arm-none-eabi libnewlib-arm-none-eabi gdb-multiarch make
 ENV CC="arm-none-eabi-gcc"
 ENV AS="arm-none-eabi-gcc -x assembler-with-cpp"
 ENV CP="arm-none-eabi-objcopy"
