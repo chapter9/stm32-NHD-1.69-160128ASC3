@@ -34,6 +34,7 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #include "nhd_oled.h"
 #include "stm32f3xx_hal_spi.h"
+#include "fonts.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

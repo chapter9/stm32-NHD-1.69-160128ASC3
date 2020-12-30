@@ -45,6 +45,7 @@ DMA_HandleTypeDef hdma_spi1_tx;
 
 /* USER CODE BEGIN PV */
 NHD_OLED_HandleTypeDef holed1;
+uint8_t fastModeActive = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -57,6 +58,7 @@ static void MX_OLED1_Init(void);
 void MY_HAL_SPI_TX_COMPLETE(SPI_HandleTypeDef *hspi);
 void MY_HAL_SPI_HTX_COMPLETE(SPI_HandleTypeDef *hspi);
 HAL_StatusTypeDef HAL_SPI_Transmit_UltraFast(uint8_t *outp, uint8_t *inp, int count);
+static void PrintResult(char* title, char* subtitle, uint32_t* result);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -96,56 +98,47 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   MX_OLED1_Init();
-  uint32_t now, last = 0;
-  char message[20];
+  uint32_t last = 0;
+  uint32_t result[2] = {0, 0};
+  NHD_OLED_FillScreen(&holed1, RGB565[1]);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-    last = HAL_GetTick();
-    for (size_t i = 0; i < 16; i++)
+    for(fastModeActive = 0; fastModeActive < 2; fastModeActive++)
     {
-      NHD_OLED_FillScreen(&holed1, RGB565[i]);
+      last = HAL_GetTick();
+      for (size_t i = 0; i < 16; i++)
+      {
+        NHD_OLED_FillScreen(&holed1, RGB565[i]);
+      }
+      result[fastModeActive] = HAL_GetTick() - last;
     }
-    now = HAL_GetTick();
-    NHD_OLED_FillScreen(&holed1, RGB565[1]);
-    sprintf(message, "Result: %lums", now - last);
-    NHD_OLED_Text(&holed1, 2, 128 - 10, "Fill Test:", RGB565[15], RGB565[1]);
-    NHD_OLED_Text(&holed1, 2, 128 - 20, "16 fills, 16 colors", RGB565[15], RGB565[1]);
-    NHD_OLED_Text(&holed1, 2, 128 - 30, message, RGB565[15], RGB565[1]);
-    HAL_Delay(2000);
+    PrintResult("Test #1 - FillScreen", "3 fills, 3 colors", result);
 
-    NHD_OLED_FillScreen(&holed1, RGB565[0]);
-    last = HAL_GetTick();
-    for (size_t i = 1; i < 100; i++)
+    for(fastModeActive = 0; fastModeActive < 2; fastModeActive++)
     {
-      NHD_OLED_Text(&holed1, 0, (i*8) % 128, "0123456789", RGB565[i % 16], RGB565[0]);
+      last = HAL_GetTick();
+      for (size_t i = 1; i < 100; i++)
+      {
+        NHD_OLED_Text(&holed1, 0, (i*8) % 128, "0123456789", RGB565[i % 16], RGB565[0], &Font8);
+      }
+      result[fastModeActive] = HAL_GetTick() - last;
     }
-    now = HAL_GetTick();
-    NHD_OLED_FillScreen(&holed1, RGB565[1]);
-    sprintf(message, "Result: %lums", now - last);
-    NHD_OLED_Text(&holed1, 2, 128 - 10, "Text Test:", RGB565[15], RGB565[1]);
-    NHD_OLED_Text(&holed1, 2, 128 - 20, "1000 char, 16 colors", RGB565[15], RGB565[1]);
-    NHD_OLED_Text(&holed1, 2, 128 - 30, message, RGB565[15], RGB565[1]);
-    HAL_Delay(2000);
+    PrintResult("Test #2 - Text", "1000 char, 16 colors, 8px", result);
 
-    NHD_OLED_FillScreen(&holed1, RGB565[0]);
-    last = HAL_GetTick();
-    for (size_t i = 1; i < 100; i++)
+    for(fastModeActive = 0; fastModeActive < 2; fastModeActive++)
     {
-      NHD_OLED_Text2x(&holed1, 0, (i*16) % 128, "0123456789", RGB565[i % 16], RGB565[0]);
+      last = HAL_GetTick();
+      for (size_t i = 1; i < 100; i++)
+      {
+        NHD_OLED_Text(&holed1, 0, (i*12) % 128, "0123456789", RGB565[i % 16], RGB565[0], &Font12);
+      }
+      result[fastModeActive] = HAL_GetTick() - last;
     }
-    now = HAL_GetTick();
-    NHD_OLED_FillScreen(&holed1, RGB565[1]);
-    sprintf(message, "Result: %lums", now - last);
-    NHD_OLED_Text(&holed1, 2, 128 - 10, "Text2x Test:", RGB565[15], RGB565[1]);
-    NHD_OLED_Text(&holed1, 2, 128 - 20, "1000 char, 16 colors", RGB565[15], RGB565[1]);
-    NHD_OLED_Text(&holed1, 2, 128 - 30, message, RGB565[15], RGB565[1]);
-    HAL_Delay(2000);
-
+    PrintResult("Test #2 - Text", "1000 char, 16 colors, 16px", result);
     /* USER CODE END WHILE */
     /* USER CODE BEGIN 3 */
   }
@@ -288,6 +281,35 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void PrintResult(char* title, char* subtitle, uint32_t* results)
+{
+  char message[20];
+
+  NHD_OLED_FillScreen(&holed1, RGB565[1]);
+
+  uint16_t pos = 0;
+  NHD_OLED_Text(&holed1, 0, pos, title, RGB565[14], RGB565[0], &Font12); pos+=14;
+  NHD_OLED_Text(&holed1, 0, pos, subtitle, RGB565[15], RGB565[1], &Font8); pos+=10;
+
+  for(size_t fm = 0; fm < 2; fm++)
+  {
+    uint32_t result = *(results+fm);
+    if (fm)
+    {
+      sprintf(message, "Fast Mode: %lums", result);
+    }
+    else
+    {
+      sprintf(message, "Normal Mode: %lums", result);
+    }
+    NHD_OLED_Text(&holed1, 0, pos, message, RGB565[15], RGB565[1], &Font8); pos+=10;
+  }
+  HAL_Delay(10000);
+
+  NHD_OLED_FillScreen(&holed1, RGB565[0]);  
+}
+
+
 static void MX_OLED1_Init(void)
 {
     holed1.RES_GPIO_Port = NHD_RES_GPIO_Port;
@@ -305,17 +327,21 @@ static void MX_OLED1_Init(void)
 
 void NHD_OLED_DataWrite(NHD_OLED_HandleTypeDef* holed, uint8_t* pData, size_t size)
 {
-  uint8_t dummy = 0x00;
-  if (HAL_SPI_Transmit_UltraFast(pData, &dummy, size) != HAL_OK)
+  if (fastModeActive)
   {
-    Error_Handler();
+    uint8_t dummy = 0x00;
+    if (HAL_SPI_Transmit_UltraFast(pData, &dummy, size) != HAL_OK)
+    {
+      Error_Handler();
+    }
   }
-  /*
-  if (HAL_SPI_Transmit(&hspi1, pData, size, 5000) != HAL_OK)
+  else
   {
-    Error_Handler();
+    if (HAL_SPI_Transmit(&hspi1, pData, size, 5000) != HAL_OK)
+    {
+      Error_Handler();
+    }
   }
-  */
 }
 
 

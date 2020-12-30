@@ -18,5 +18,5 @@ Launch a Visual Code from the folder:
 - Visual Code should launch in Dev Container: Docker from Docker mode
 - Build using CTRL+B or run build task prepdebug
 - Debug:
-  - Launch ./debug_win.ps1 in host (this relates to the fact that usb devices are not accessible on the container)
+  - Launch ./debug_win.ps1 in host (this relates to the fact that usb devices are not accessible in the container)
   - Start Debug Session GDB (REMOTE) in Visual Code

@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include "stm32f3xx_hal.h"
+#include "fonts.h"
 
 typedef struct __NHD_OLED_HandleTypeDef {
     GPIO_TypeDef* RES_GPIO_Port;
@@ -135,17 +136,15 @@ void NHD_OLED_SerialPixelData8(NHD_OLED_HandleTypeDef* holed, uint8_t Value);
 void NHD_OLED_SerialPixelData16(NHD_OLED_HandleTypeDef* holed, uint16_t Value);
 void NHD_OLED_SetColumnAddress(NHD_OLED_HandleTypeDef* holed, uint8_t x_start, uint8_t x_end);
 void NHD_OLED_SetRowAddress(NHD_OLED_HandleTypeDef* holed, uint8_t y_start, uint8_t y_end);
+void NHD_OLED_SetWindow(NHD_OLED_HandleTypeDef* holed, uint8_t x_start, uint8_t y_start, uint8_t x_end, uint8_t y_end);
 void NHD_OLED_WriteMemoryStart(NHD_OLED_HandleTypeDef* holed);
 void NHD_OLED_Pixel_RGB888(NHD_OLED_HandleTypeDef* holed, uint16_t color);
 void NHD_OLED_SetPosition(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos);
 void NHD_OLED_FillScreen(NHD_OLED_HandleTypeDef* holed, uint16_t color);
 void NHD_OLED_Init(NHD_OLED_HandleTypeDef* holed);
 
-void NHD_OLED_Text(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, char* message, uint16_t textColor, uint16_t backgroundColor);
-void NHD_OLED_Text2x(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, char* message, uint16_t textColor, uint16_t backgroundColor);
-void NHD_OLED_Char(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, unsigned char letter, uint16_t textColor, uint16_t backgroundColor);
-void NHD_OLED_Char2x(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, unsigned char letter, uint16_t textColor, uint16_t backgroundColor);
-
+void NHD_OLED_Text(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, char* message, uint16_t textColor, uint16_t backgroundColor, sFONT* font);
+void NHD_OLED_DrawMask(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, size_t width, size_t height, const uint8_t* pData, uint16_t textColor, uint16_t backgroundColor);
 #ifdef __cplusplus
 }
 #endif

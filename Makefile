@@ -40,6 +40,11 @@ Core/Src/main.c \
 Core/Src/nhd_oled.c \
 Core/Src/stm32f3xx_it.c \
 Core/Src/stm32f3xx_hal_msp.c \
+Utilities/Fonts/font8.c \
+Utilities/Fonts/font12.c \
+Utilities/Fonts/font16.c \
+Utilities/Fonts/font20.c \
+Utilities/Fonts/font24.c \
 Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_spi.c \
 Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_spi_ex.c \
 Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal.c \
@@ -118,8 +123,8 @@ C_INCLUDES =  \
 -IDrivers/STM32F3xx_HAL_Driver/Inc \
 -IDrivers/STM32F3xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32F3xx/Include \
--IDrivers/CMSIS/Include
-
+-IDrivers/CMSIS/Include \
+-IUtilities/Fonts
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

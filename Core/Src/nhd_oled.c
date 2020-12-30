@@ -1,5 +1,7 @@
 #include "nhd_oled.h"
 
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 const uint8_t NHD_OLED_Init_Sequence[] = {
   SEPS525_REG_REDUCE_CURRENT, 0x01,
   SEPS525_REG_REDUCE_CURRENT, 0x00,
@@ -25,6 +27,7 @@ const uint8_t NHD_OLED_Init_Sequence[] = {
   SEPS525_REG_MX2_ADDR, 0x9F,
   SEPS525_REG_MY1_ADDR, 0x00,
   SEPS525_REG_MY2_ADDR, 0x7F,
+  SEPS525_REG_SCREEN_SAVER_CONTROL, 0x00,
   SEPS525_REG_DISP_ON_OFF, 0x01,
 };
 
@@ -218,9 +221,9 @@ void NHD_OLED_FillScreen(NHD_OLED_HandleTypeDef* holed, uint16_t color)    // fi
 void NHD_OLED_Init(NHD_OLED_HandleTypeDef* holed)
 {
     NHD_OLED_RES_LOW();
-    HAL_Delay(2);
+    HAL_Delay(10);
     NHD_OLED_RES_HIGH();
-    HAL_Delay(2);
+    HAL_Delay(10);
 
     for (size_t i = 0; i < sizeof(NHD_OLED_Init_Sequence); i+=2)
     {
@@ -239,71 +242,45 @@ void NHD_OLED_Init(NHD_OLED_HandleTypeDef* holed)
 /************ START **************/
 /*********************************/
 
-void NHD_OLED_Char(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, unsigned char letter, uint16_t textColor, uint16_t backgroundColor)  // function to show text
+void NHD_OLED_Text(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, char* message, uint16_t textColor, uint16_t backgroundColor, sFONT* font)
 {
-    int i;
-    int count;
-    unsigned char mask = 0x80;
-    letter -= 0x20;
-    
-    NHD_OLED_SetPosition(holed,x_pos,y_pos);
-    NHD_OLED_SetWindow(holed,x_pos,y_pos,x_pos+4,y_pos+7);
-    NHD_OLED_WriteMemoryStart(holed);
-    for(i=0;i<8;i++)     // each character is 8 pixels tall
+    const uint16_t width = font->Width;
+    const uint16_t height = font->Height;
+    const uint16_t bytesPerCharMask = font->Height * ((width / 8) + 1);
+
+    while((*message) != 0)
     {
-        for (count=0;count<5;count++)    // each character is 5 pixels wide
+        const uint16_t offset = ((*message++) - ' ') * bytesPerCharMask;
+        const uint8_t* data = (font->table + offset);
+
+        NHD_OLED_DrawMask(holed, x_pos, y_pos, width, height, data, textColor, backgroundColor);
+        x_pos += width;
+    }
+}
+
+void NHD_OLED_DrawMask(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, size_t width, size_t height, const uint8_t* pData, uint16_t textColor, uint16_t backgroundColor)
+{
+    uint8_t mask = 0x80;
+    uint8_t data = *pData;
+
+    NHD_OLED_SetPosition(holed, x_pos, y_pos);
+    NHD_OLED_SetWindow(holed, x_pos, y_pos, x_pos + width - 1, y_pos + height - 1);
+    NHD_OLED_WriteMemoryStart(holed);
+
+    for (size_t i = 0; i < height*width; i++)
+    {
+        if (mask == 0x00 || (i % width == 0))
         {
-            if((NHD_OLED_Ascii_1[letter][count] & mask) == mask)
-                NHD_OLED_SerialPixelData16(holed,textColor);
-            else
-                NHD_OLED_SerialPixelData16(holed,backgroundColor);
+            mask = 0x80;
+            data = *pData++;
         }
+                    
+        if((data & mask) == mask)
+            NHD_OLED_SerialPixelData16(holed, textColor);
+        else
+            NHD_OLED_SerialPixelData16(holed, backgroundColor);
+
         mask = mask >> 1;
     }
-}
-
-void NHD_OLED_Char2x(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, unsigned char letter, uint16_t textColor, uint16_t backgroundColor)  // function to show text (2x size)
-{
-    int i;
-    int count;
-    unsigned char mask = 0x80;
-    letter -= 0x20;
     
-    NHD_OLED_SetPosition(holed,x_pos,y_pos);
-    NHD_OLED_SetWindow(holed,x_pos,y_pos,x_pos+9,y_pos+15);
-    NHD_OLED_WriteMemoryStart(holed);
-    for(i=1;i<=16;i++)     // each character is 16 pixels tall
-    {
-        for (count=0;count<10;count++)    // each character is 10 pixels wide
-        {
-            if((NHD_OLED_Ascii_1[letter][(count/2)] & mask) == mask)
-                NHD_OLED_SerialPixelData16(holed,textColor);
-            else
-                NHD_OLED_SerialPixelData16(holed,backgroundColor);
-        }
-        if((i%2)==0)
-        {
-            mask = mask >> 1;
-        }
-    }
-}
-
-void NHD_OLED_Text(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, char* message, uint16_t textColor, uint16_t backgroundColor)
-{
-    char* pCurrent = message;
-    while((*pCurrent) != 0)
-    {
-        uint16_t offset = ((pCurrent - message) * 6);
-        NHD_OLED_Char(holed, x_pos + offset, y_pos, *pCurrent++, textColor, backgroundColor);
-    }
-}
-
-void NHD_OLED_Text2x(NHD_OLED_HandleTypeDef* holed, unsigned char x_pos, unsigned char y_pos, char* message, uint16_t textColor, uint16_t backgroundColor)
-{
-    char* pCurrent = message;
-    while((*pCurrent) != 0)
-    {
-        uint16_t offset = ((pCurrent - message) * 11);
-        NHD_OLED_Char2x(holed, x_pos + offset, y_pos, *pCurrent++, textColor, backgroundColor);
-    }
 }
